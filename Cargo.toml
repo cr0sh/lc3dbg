@@ -4,6 +4,13 @@ version = "1.0.0"
 authors = ["cr0sh <ska827@snu.ac.kr>"]
 edition = "2018"
 
+description = "Command-line LC-3 debugger"
+license = "GPL-2.0-only"
+readme = "README.md"
+repository = "https://github.com/cr0sh/lc3dbg"
+keywords = ["lc-3", "lc3", "debugger", "command-line"]
+categories = ["command-line-utilities", "development-tools", "simulation" ]
+
 [dependencies]
 lc3-rs = "0.2"
 failure = "0.1"
