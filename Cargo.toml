@@ -1,0 +1,12 @@
+[package]
+name = "lc3dbg"
+version = "1.0.0"
+authors = ["cr0sh <ska827@snu.ac.kr>"]
+edition = "2018"
+
+[dependencies]
+lc3-rs = "0.2"
+failure = "0.1"
+console = "0.7"
+pretty-bytes = "0.2"
+arraydeque = "0.4"
