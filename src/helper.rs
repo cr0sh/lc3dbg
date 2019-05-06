@@ -84,9 +84,6 @@ impl<'a> Iterator for TermWrapper<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.0.read_char() {
             Ok(ch) => {
-                if let Err(err) = self.0.write(ch.to_string().as_ref()) {
-                    return Some(Err(err));
-                }
                 if !ch.is_ascii() {
                     if let Err(err) = self.0.write_line(&format!(
                         "경고: non-ASCII 입력에 대한 행동은 정의되지 않았습니다. ({})",
@@ -99,6 +96,9 @@ impl<'a> Iterator for TermWrapper<'a> {
                 if ch as u8 == 23 {
                     None
                 } else {
+                    if let Err(err) = self.0.write(ch.to_string().as_ref()) {
+                        return Some(Err(err));
+                    }
                     Some(Ok(ch as u8))
                 }
             }
