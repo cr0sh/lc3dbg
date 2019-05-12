@@ -39,7 +39,7 @@ pub fn parse_symbol_table(data: &str, syms: &mut [TableEntry]) {
 
 /// 심볼 테이블 후처리(Relative Variant 준비)
 pub fn symbol_table_postprocess(syms: &mut [TableEntry]) {
-    syms[0] = TableEntry::Symbol(String::from("__OS__START__"));
+    syms[0] = TableEntry::Symbol(String::from("__OS__START"));
     let mut current_idx = 0;
     let mut last_symbol_idx = 0;
     while let TableEntry::Relative(_) = syms[current_idx] {
