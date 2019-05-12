@@ -3,11 +3,14 @@ use failure::Error;
 use lc3::vm::{MCR, VM};
 use pretty_bytes::converter::convert;
 use std::env::args;
+use std::fs;
+use std::io::{ErrorKind, Result as IOResult};
 use std::path::Path;
 use undo::UndoBuffer;
 
 mod helper;
 mod run;
+mod symbol;
 mod undo;
 
 const HELP: &str = r#"lc3dbg - LC-3 디버거
@@ -16,29 +19,42 @@ const HELP: &str = r#"lc3dbg - LC-3 디버거
     lc3dbg --help: 이 도움말을 출력합니다.
 "#;
 
-fn print_help() {
-    println!("{}", HELP);
+fn print_help(term: &Term) -> IOResult<()> {
+    term.write_line(HELP)
 }
 
 fn main() -> Result<(), Error> {
     let args = args().skip(1).collect::<Vec<_>>();
+    let mut term = Term::stdout();
 
     if args == ["--help".to_owned()] {
-        print_help();
+        print_help(&term)?;
         return Ok(());
     }
 
     let mut vm = VM::new();
+    let mut symbol_table = vec![symbol::TableEntry::Relative(0); 65536];
 
     for arg in args.into_iter() {
-        println!("프로그램 로드: {}", arg);
-        vm.load_file(Path::new(&arg))?;
+        term.write_line(&format!("프로그램 로드: {}", arg))?;
+        let path = Path::new(&arg);
+        vm.load_file(path)?;
+        match fs::read(path.with_extension("sym")) {
+            Err(ref e) if e.kind() == ErrorKind::NotFound => continue,
+            file @ _ => {
+                term.move_cursor_up(1)?;
+                term.clear_line()?;
+                term.write_line(&format!("프로그램 로드: {}+sym", arg))?;
+                symbol::parse_symbol_table(&String::from_utf8(file?)?, &mut symbol_table)
+            }
+        };
     }
+
+    symbol::symbol_table_postprocess(&mut symbol_table);
 
     let mut pre_input: Vec<u8> = vec![];
     let mut undo_buffer: Option<UndoBuffer> = None;
 
-    let mut term = Term::stdout();
     helper::print_register_status(&vm, &term)?;
 
     'cmdloop: loop {
@@ -179,6 +195,21 @@ fn main() -> Result<(), Error> {
                     Ok(())
                 }
             },
+            Some("sym") => match body {
+                Some(addr) => {
+                    let addr = match helper::parse_usize_with_prefix(addr) {
+                        Ok(addr) => addr,
+                        Err(err) => {
+                            term.write_line("잘못된 입력입니다.")?;
+                            term.write_line(&format!("{}", err))?;
+                            continue;
+                        }
+                    };
+                    term.write_line(&symbol::symbol_table_query(&symbol_table, addr))?;
+                    Ok(())
+                }
+                None => symbol::symbol_table_view(&symbol_table, &term),
+            },
             _ => {
                 term.write_line("유효한 명령어가 아닙니다.")?;
                 continue;
@@ -209,6 +240,9 @@ fn help_command(_: &mut VM, term: &Term, body: Option<&str>) -> Result<(), Error
                      (매 instruction마다 VM을 복사해야 하기 때문입니다.)
     buf(fer) 0: 버퍼를 없앱니다.
     undo <n=1>: <n> instruction만큼 VM을 되돌립니다.
+
+    sym: 심볼 테이블을 봅니다.
+    sym <addr>: 해당 위치로부터 가장 가까운 심볼을 찾습니다.
 
     help: 이 도움말을 출력합니다.
     help <command>: 해당 명령어에 대한 도움말을 출력합니다.
@@ -243,6 +277,9 @@ turn off: VM의 Clock Enable Bit을 0으로 만듭니다(VM을 끕니다).",
 buf(fer) 0: 버퍼를 없앱니다.",
             "undo" => "undo <n>: <n> instruction만큼 VM을 되돌립니다.
           undo를 취소할 수는 없으니 주의하세요.",
+            "sym" => "syms: 심볼 테이블을 출력합니다.
+sym <addr>: 해당 위치로부터 가장 가까운 심볼을 찾습니다.
+            해당 위치에서 앞으로만 검색합니다.",
             "help" => "help: 이 도움말을 출력합니다.
 help <command>: 해당 명령어에 대한 도움말을 출력합니다.",
             _ => "존재하지 않는 명령어입니다.",

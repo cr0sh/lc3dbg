@@ -106,3 +106,11 @@ impl<'a> Iterator for TermWrapper<'a> {
         }
     }
 }
+
+pub fn parse_usize_with_prefix(s: &str) -> Result<usize, std::num::ParseIntError> {
+    if s.len() >= 2 && &s[..2] == "0x" {
+        usize::from_str_radix(&s[2..], 16)
+    } else {
+        s.parse::<usize>()
+    }
+}
