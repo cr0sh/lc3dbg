@@ -1,6 +1,6 @@
 [package]
 name = "lc3dbg"
-version = "1.1.2"
+version = "1.2.0"
 authors = ["cr0sh <ska827@snu.ac.kr>"]
 edition = "2018"
 
