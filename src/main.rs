@@ -26,6 +26,7 @@ fn print_help(term: &Term) -> IOResult<()> {
 fn main() -> Result<(), Error> {
     let args = args().skip(1).collect::<Vec<_>>();
     let mut term = Term::stdout();
+    term.write_line(&format!("lc3dbg v{}", env!("CARGO_PKG_VERSION")))?;
 
     if args == ["--help".to_owned()] {
         print_help(&term)?;
