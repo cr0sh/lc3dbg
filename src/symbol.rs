@@ -42,9 +42,11 @@ pub fn parse_symbol_table(data: &str, syms: &mut [TableEntry]) {
 pub fn symbol_table_postprocess(syms: &mut [TableEntry]) {
     let mut current_idx = 0;
     let mut last_symbol_idx = 0;
-    while let TableEntry::Relative(_) = syms[current_idx] {
-        syms[current_idx] = TableEntry::Unknown;
+    while let TableEntry::Unknown = syms[current_idx] {
         current_idx += 1;
+        if current_idx == 1 << 16 {
+            break;
+        }
     }
     while current_idx < 65536 {
         if let TableEntry::Symbol(_) = &syms[current_idx] {

@@ -33,7 +33,7 @@ fn main() -> Result<(), Error> {
     }
 
     let mut vm = VM::new();
-    let mut symbol_table = vec![symbol::TableEntry::Relative(0); 65536];
+    let mut symbol_table = vec![symbol::TableEntry::Unknown; 65536];
 
     for arg in args.into_iter() {
         term.write_line(&format!("프로그램 로드: {}", arg))?;
