@@ -11,6 +11,7 @@ lazy_static! {
 pub enum TableEntry {
     Symbol(String),
     Relative(usize),
+    Unknown,
 }
 
 impl TableEntry {
@@ -39,10 +40,10 @@ pub fn parse_symbol_table(data: &str, syms: &mut [TableEntry]) {
 
 /// 심볼 테이블 후처리(Relative Variant 준비)
 pub fn symbol_table_postprocess(syms: &mut [TableEntry]) {
-    syms[0] = TableEntry::Symbol(String::from("__OS__START"));
     let mut current_idx = 0;
     let mut last_symbol_idx = 0;
     while let TableEntry::Relative(_) = syms[current_idx] {
+        syms[current_idx] = TableEntry::Unknown;
         current_idx += 1;
     }
     while current_idx < 65536 {
@@ -84,6 +85,7 @@ pub fn symbol_table_query(symbol_table: &[TableEntry], addr: usize) -> String {
             symbol_table[addr - offset].unwrap_symbol_name(),
             offset
         ),
+        TableEntry::Unknown => String::from("?"),
     }
 }
 
