@@ -78,11 +78,33 @@ pub fn symbol_table_view(symbol_table: &[TableEntry], term: &Term) -> Result<(),
 
 pub fn symbol_table_query(symbol_table: &[TableEntry], addr: usize) -> String {
     match &symbol_table[addr] {
-        TableEntry::Symbol(name) => format!("{}+0x0", name),
+        TableEntry::Symbol(name) => name.to_string(),
         TableEntry::Relative(offset) => format!(
             "{}+0x{:X}",
             symbol_table[addr - offset].unwrap_symbol_name(),
             offset
         ),
     }
+}
+
+pub fn decorate_instruction_str(
+    symbol_table: &[TableEntry],
+    instruction: &str,
+    addr: usize,
+) -> String {
+    let splits = instruction.clone().split(" ").collect::<Vec<_>>();
+    let decorator = match splits[0] {
+        "BR" | "BRn" | "BRz" | "BRp" | "BRnz" | "BRzp" | "BRnp" | "BRnzp" | "LD" | "LDI"
+        | "LEA" | "ST" | "STI" => {
+            String::from(" (")
+                + &symbol_table_query(
+                    symbol_table,
+                    (addr as i32 + 1 + splits[splits.len() - 1][1..].parse::<i32>().unwrap())
+                        as usize,
+                )
+                + ")"
+        }
+        _ => String::from(""),
+    };
+    decorator
 }

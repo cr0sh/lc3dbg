@@ -91,7 +91,10 @@ fn main() -> Result<(), Error> {
                 ))?;
                 Ok(())
             }
-            Some("stat") => helper::print_register_status(&vm, &term),
+            Some("stat") => {
+                helper::print_register_status(&vm, &term)?;
+                Ok(())
+            }
             Some("input") => {
                 term.write_line(
                     "미리 입력될 내용을 모두 쓴 후, Ctrl+W를 누르세요.",
@@ -210,6 +213,77 @@ fn main() -> Result<(), Error> {
                 }
                 None => symbol::symbol_table_view(&symbol_table, &term),
             },
+            Some("mem") => match body {
+                Some(body) => {
+                    let mut bsplit = body.split(" ");
+
+                    let addr_str = bsplit.next().unwrap();
+                    let mut range_str = match bsplit.next() {
+                        Some(rstr) => rstr.to_owned(),
+                        None => String::from("+10"),
+                    };
+                    if range_str[0..1].parse::<u8>().is_ok() {
+                        range_str = String::from("+") + &range_str;
+                    } else if &range_str[1..] == "" {
+                        range_str = range_str.to_owned() + "10";
+                    }
+
+                    let addr: usize;
+                    if addr_str.to_ascii_lowercase() == "pc" {
+                        addr = vm.pc as usize;
+                    } else {
+                        match helper::parse_usize_with_prefix(addr_str) {
+                            Ok(a) => addr = a,
+                            Err(err) => {
+                                term.write_line("잘못된 입력입니다.")?;
+                                term.write_line(&format!("{}", err))?;
+                                continue;
+                            }
+                        };
+                    }
+
+                    let mut lower: usize;
+                    let mut upper: usize;
+                    let n = match helper::parse_usize_with_prefix(&range_str[1..]) {
+                        Ok(addr) => addr,
+                        Err(err) => {
+                            term.write_line("잘못된 입력입니다.")?;
+                            term.write_line(&format!("{}", err))?;
+                            continue;
+                        }
+                    };
+
+                    match &range_str[0..1] {
+                        "+" => {
+                            lower = addr;
+                            upper = addr + n;
+                        }
+                        "-" => {
+                            lower = addr + 1 - n;
+                            upper = addr + 1;
+                        }
+                        "~" => {
+                            lower = addr - n;
+                            upper = addr + n + 1;
+                        }
+                        _ => {
+                            term.write_line("잘못된 입력입니다.")?;
+                            continue;
+                        }
+                    }
+                    lower = std::cmp::max(0, lower);
+                    upper = std::cmp::min(1 << 16, upper);
+                    term.write_line("addr  binary           hex      uint    int   instruction           (symbol)")?;
+                    for addr in lower..upper {
+                        helper::view_mem_entry(addr, &vm, &symbol_table, &term)?;
+                    }
+                    Ok(())
+                }
+                None => {
+                    term.write_line("잘못된 입력입니다.")?;
+                    Ok(())
+                }
+            },
             _ => {
                 term.write_line("유효한 명령어가 아닙니다.")?;
                 continue;
@@ -243,6 +317,7 @@ fn help_command(_: &mut VM, term: &Term, body: Option<&str>) -> Result<(), Error
 
     sym: 심볼 테이블을 봅니다.
     sym <addr>: 해당 위치로부터 가장 가까운 심볼을 찾습니다.
+    mem <addr> <n>: 주어진 주소 주변의 메모리 값을 확인합니다.
 
     help: 이 도움말을 출력합니다.
     help <command>: 해당 명령어에 대한 도움말을 출력합니다.
@@ -277,9 +352,17 @@ turn off: VM의 Clock Enable Bit을 0으로 만듭니다(VM을 끕니다).",
 buf(fer) 0: 버퍼를 없앱니다.",
             "undo" => "undo <n>: <n> instruction만큼 VM을 되돌립니다.
           undo를 취소할 수는 없으니 주의하세요.",
-            "sym" => "syms: 심볼 테이블을 출력합니다.
+            "sym" => "sym: 심볼 테이블을 출력합니다.
 sym <addr>: 해당 위치로부터 가장 가까운 심볼을 찾습니다.
-            해당 위치에서 앞으로만 검색합니다.",
+            해당 위치에서 앞으로만 검색합니다.
+            addr 변수는 x1234와 같이 16진수로, 또는 1234와 같이 10진수로 표현할 수 있습니다.",
+            "mem" => "mem <addr> <+/-/~n>: 현재 PC 근방의 메모리 값을 확인합니다.
+    addr 변수는 x1234와 같이 16진수로, 또는 1234와 같이 10진수로 표현하거나, PC(pc)를 입력해 현재 pc 주변의 값을 볼 수 있습니다.
+    +n: 주어진 메모리 위치 및 다음 n개의 메모리 값을 확인합니다. (최대 n개)
+    -n: 주어진 메모리 위치 및 이전 n개의 메모리 값을 확인합니다. (최대 n개)
+    ~n: 주어진 메모리 위치 및 앞뒤 n개의 메모리 값을 확인합니다. (최대 2n+1개)
+    n이 주어지지 않는다면 10, +/-/~가 주어지지 않는다면 +가 기본으로 주어집니다.
+    n 변수는 x1234와 같이 16진수로, 또는 1234와 같이 10진수로 표현할 수 있습니다.",
             "help" => "help: 이 도움말을 출력합니다.
 help <command>: 해당 명령어에 대한 도움말을 출력합니다.",
             _ => "존재하지 않는 명령어입니다.",

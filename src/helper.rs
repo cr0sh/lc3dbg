@@ -1,11 +1,11 @@
+use crate::symbol::{decorate_instruction_str, TableEntry};
 use console::Term;
-use failure::Error;
 use lc3::vm::instruction::Instruction;
 use lc3::vm::{MCR, VM};
 use std::io::{Read, Result as IOResult, Write};
 use std::iter::Iterator;
 
-pub fn print_register_status(vm: &VM, term: &Term) -> Result<(), Error> {
+pub fn print_register_status(vm: &VM, term: &Term) -> IOResult<()> {
     term.write_line(&format!(
         r#"PC: 0x{:04X}           CC: {}   [{}]
 IR: 0x{:04X}           Supervisor: {}
@@ -49,8 +49,7 @@ PC(Next)   : {}
         vm.register[7] as i16,
         Instruction::from_u16(vm.ir),
         Instruction::from_u16(vm.mem[vm.pc as usize]),
-    ))?;
-    Ok(())
+    ))
 }
 
 /// Wrapper that re-implements `std::io::Read`
@@ -108,9 +107,31 @@ impl<'a> Iterator for TermWrapper<'a> {
 }
 
 pub fn parse_usize_with_prefix(s: &str) -> Result<usize, std::num::ParseIntError> {
-    if s.len() >= 2 && &s[..2] == "0x" {
-        usize::from_str_radix(&s[2..], 16)
+    if s.len() >= 1 && &s[0..1] == "x" {
+        usize::from_str_radix(&s[1..], 16)
     } else {
         s.parse::<usize>()
     }
+}
+
+pub fn view_mem_entry(
+    addr: usize,
+    vm: &VM,
+    symbol_table: &[TableEntry],
+    term: &Term,
+) -> IOResult<()> {
+    term.write_line(&format!(
+        "x{:04X} {:016b} x{:04X}   {:5} {:6}   {:<20} {}",
+        addr,
+        vm.mem[addr],
+        vm.mem[addr],
+        vm.mem[addr],
+        vm.mem[addr] as i16,
+        format!("{}", Instruction::from_u16(vm.mem[addr])),
+        decorate_instruction_str(
+            &symbol_table,
+            &format!("{}", Instruction::from_u16(vm.mem[addr])),
+            addr
+        ),
+    ))
 }
