@@ -1,6 +1,6 @@
 [package]
 name = "lc3dbg"
-version = "1.2.0"
+version = "1.2.1"
 authors = ["cr0sh <ska827@snu.ac.kr>"]
 edition = "2018"
 
@@ -12,7 +12,7 @@ keywords = ["lc-3", "lc3", "debugger", "command-line"]
 categories = ["command-line-utilities", "development-tools", "simulation" ]
 
 [dependencies]
-lc3-rs = "0.2"
+lc3-rs = "0.3"
 failure = "0.1"
 console = "0.7"
 pretty-bytes = "0.2"
