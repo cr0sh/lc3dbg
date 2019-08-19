@@ -1,3 +1,4 @@
+use lc3dbg::*;
 use console::Term;
 use failure::Error;
 use lc3::vm::{MCR, VM};
@@ -7,11 +8,6 @@ use std::fs;
 use std::io::{ErrorKind, Result as IOResult};
 use std::path::Path;
 use undo::UndoBuffer;
-
-mod helper;
-mod run;
-mod symbol;
-mod undo;
 
 const HELP: &str = r#"lc3dbg - LC-3 디버거
 사용법:
@@ -158,11 +154,12 @@ fn main() -> Result<(), Error> {
                     Ok(())
                 }
                 Ok(size) => {
-                    let expected_bytes = std::mem::size_of::<Option<VM>>() as u32 * size as u32;
+                    let expected_bytes =
+                        (std::mem::size_of::<Option<VM>>() as i64).wrapping_mul(size as i64);
                     if expected_bytes >= 100 * (1 << 20) {
                         term.write_line(&format!(
                             "경고: 100MiB 이상의 큰 메모리를 할당합니다. ({})",
-                            convert(expected_bytes.into())
+                            convert(expected_bytes as f64)
                         ))?;
                         loop {
                             term.write_str("계속하시겠습니까? (y/n) ")?;
@@ -189,7 +186,7 @@ fn main() -> Result<(), Error> {
                     ))?;
                     term.write_line(&format!(
                         "할당된 메모리: {}",
-                        convert(expected_bytes.into())
+                        convert(expected_bytes as f64)
                     ))?;
                     Ok(())
                 }
