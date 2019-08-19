@@ -12,7 +12,7 @@ keywords = ["lc-3", "lc3", "debugger", "command-line"]
 categories = ["command-line-utilities", "development-tools", "simulation" ]
 
 [dependencies]
-lc3-rs = "0.3"
+lc3-rs = "0.4"
 failure = "0.1"
 console = "0.7"
 pretty-bytes = "0.2"

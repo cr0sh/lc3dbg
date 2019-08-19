@@ -15,20 +15,20 @@ pub fn run_command(
     if let Some(limit) = body {
         match limit.parse::<usize>() {
             Ok(n) => Ok(match undo_buffer {
-                None => vm.run_n_with_io(
-                    n,
+                None => vm.run_n(
                     &mut pre_input.chain(TermWrapper(&mut term.clone())),
                     &mut TermWrapper(&mut term.clone()),
+                    n,
                 ),
                 Some(buffer) => {
                     let mut count = 0usize;
                     while count < n && vm.mem[MCR] >> 15 > 0 {
                         buffer.push(vm);
                         assert_eq!(
-                            vm.run_n_with_io(
-                                1,
+                            vm.run_n(
                                 &mut pre_input.chain(TermWrapper(&mut term.clone())),
                                 &mut TermWrapper(&mut term.clone()),
+                                1,
                             ),
                             1
                         );
@@ -44,7 +44,7 @@ pub fn run_command(
         }
     } else {
         Ok(match undo_buffer {
-            None => vm.run_with_io(
+            None => vm.run(
                 &mut pre_input.chain(TermWrapper(&mut term.clone())),
                 &mut TermWrapper(&mut term.clone()),
             ),
@@ -53,10 +53,10 @@ pub fn run_command(
                 while vm.mem[MCR] >> 15 > 0 {
                     buffer.push(vm);
                     assert_eq!(
-                        vm.run_n_with_io(
-                            1,
+                        vm.run_n(
                             &mut pre_input.chain(TermWrapper(&mut term.clone())),
                             &mut TermWrapper(&mut term.clone()),
+                            1,
                         ),
                         1
                     );
