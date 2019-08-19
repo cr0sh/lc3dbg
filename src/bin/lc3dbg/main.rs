@@ -142,7 +142,7 @@ fn main() -> Result<(), Error> {
                 }
             },
             Some("buffer") | Some("buf") => match body
-                .ok_or::<Box<std::error::Error>>(
+                .ok_or::<Box<dyn std::error::Error>>(
                     "버퍼 크기가 명시되지 않았습니다(버퍼를 없애려면 크기를 0으로 두세요)"
                         .into(),
                 )
